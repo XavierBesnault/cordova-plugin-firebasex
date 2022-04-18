@@ -2,10 +2,11 @@
 #import "FirebasePlugin.h"
 #import "Firebase.h"
 #import <objc/runtime.h>
-
+#import "FirebasePluginAppCheckProviderFactory.h"
 
 @import UserNotifications;
 @import FirebaseFirestore;
+@import FirebaseAppCheck;
 
 // Implement UNUserNotificationCenterDelegate to receive display notification via APNS for devices running iOS 10 and above.
 // Implement FIRMessagingDelegate to receive data message via FCM for devices running iOS 10 and above.
@@ -51,7 +52,12 @@ static bool authStateChangeListenerInitialized = false;
         if(![FIRApp defaultApp]) {
             // get GoogleService-Info.plist file path
             NSString *filePath = [[NSBundle mainBundle] pathForResource:@"GoogleService-Info" ofType:@"plist"];
-            
+
+            // Init App Check
+            FirebasePluginAppCheckProviderFactory *providerFactory =
+                    [[FirebasePluginAppCheckProviderFactory alloc] init];
+            [FIRAppCheck setAppCheckProviderFactory:providerFactory];
+
             // if file is successfully found, use it
             if(filePath){
                 [FirebasePlugin.firebasePlugin _logMessage:@"GoogleService-Info.plist found, setup: [FIRApp configureWithOptions]"];

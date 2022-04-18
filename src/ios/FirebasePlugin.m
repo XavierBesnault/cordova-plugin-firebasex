@@ -13,6 +13,7 @@
 @import UserNotifications;
 @import CommonCrypto;
 @import AuthenticationServices;
+@import FirebaseAppCheck;
 
 @implementation FirebasePlugin
 
@@ -594,6 +595,37 @@ static NSMutableDictionary* traces;
 
             CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
             [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+        }@catch (NSException *exception) {
+            [self handlePluginExceptionWithContext:exception :command];
+        }
+    }];
+}
+
+/*
+ * App Check
+ */
+- (void)getAppCheckToken:(CDVInvokedUrlCommand *)command {
+    [self.commandDelegate runInBackground:^{
+        @try {
+            [[FIRAppCheck appCheck] tokenForcingRefresh:NO
+                                             completion:^(FIRAppCheckToken * _Nullable token,
+                                                          NSError * _Nullable error) {
+                if (error != nil) {
+                    // Handle any errors if the token was not retrieved.
+                    NSLog(@"Unable to retrieve App Check token: %@", error);
+                    return;
+                }
+                if (token == nil) {
+                    NSLog(@"Unable to retrieve App Check token.");
+                    return;
+                }
+
+                // Get the raw App Check token string.
+                NSString *tokenString = token.token;
+
+                CDVPluginResult *commandResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:tokenString];
+                [self.commandDelegate sendPluginResult:commandResult callbackId:command.callbackId];
+            }];
         }@catch (NSException *exception) {
             [self handlePluginExceptionWithContext:exception :command];
         }

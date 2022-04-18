@@ -33,6 +33,11 @@ exports._onInstallationIdChangeCallback = function(installationId){
  * Public API
  **************/
 
+// App Check
+exports.getAppCheckToken = function (success, error) {
+    exec(success, error, "FirebasePlugin", "getAppCheckToken", []);
+};
+
 // Notifications
 exports.getToken = function (success, error) {
   exec(success, error, "FirebasePlugin", "getToken", []);
