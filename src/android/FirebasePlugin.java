@@ -22,6 +22,9 @@ import androidx.core.app.NotificationManagerCompat;
 import android.util.Base64;
 import android.util.Log;
 
+import com.google.firebase.appcheck.AppCheckToken;
+import com.google.firebase.appcheck.FirebaseAppCheck;
+import com.google.firebase.appcheck.safetynet.SafetyNetAppCheckProviderFactory;
 import com.google.firebase.auth.ActionCodeSettings;
 import com.google.firebase.auth.EmailAuthCredential;
 import com.google.firebase.auth.EmailAuthProvider;
@@ -120,6 +123,7 @@ public class FirebasePlugin extends CordovaPlugin {
     private FirebaseCrashlytics firebaseCrashlytics;
     private FirebaseFirestore firestore;
     private FirebaseFunctions functions;
+    private FirebaseAppCheck firebaseAppCheck;
     private Gson gson;
     private FirebaseAuth.AuthStateListener authStateListener;
     private boolean authStateChangeListenerInitialized = false;
@@ -182,6 +186,10 @@ public class FirebasePlugin extends CordovaPlugin {
 
                     authStateListener = new AuthStateListener();
                     FirebaseAuth.getInstance().addAuthStateListener(authStateListener);
+
+                    firebaseAppCheck = FirebaseAppCheck.getInstance();
+                    firebaseAppCheck.installAppCheckProviderFactory(
+                            SafetyNetAppCheckProviderFactory.getInstance());
 
                     firestore = FirebaseFirestore.getInstance();
                     functions = FirebaseFunctions.getInstance();
@@ -395,6 +403,8 @@ public class FirebasePlugin extends CordovaPlugin {
                 this.getInstallationId(args, callbackContext);
             } else if (action.equals("getInstallationToken")) {
                 this.getInstallationToken(args, callbackContext);
+            } else if (action.equals("getAppCheckToken")) {
+                this.getAppCheckToken(args, callbackContext);
             } else{
                 callbackContext.error("Invalid action: " + action);
                 return false;
@@ -2783,6 +2793,29 @@ public class FirebasePlugin extends CordovaPlugin {
         });
     }
 
+    private void getAppCheckToken(JSONArray args, CallbackContext callbackContext) throws JSONException {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    firebaseAppCheck.getAppCheckToken(false)
+                            .addOnCompleteListener(new OnCompleteListener<AppCheckToken>() {
+                                @Override
+                                public void onComplete(@NonNull Task<AppCheckToken> task) {
+                                    if (task.isSuccessful() || task.getException() == null) {
+                                        callbackContext.success(task.getResult().getToken());
+                                    }else if(task.getException() != null){
+                                        callbackContext.error(task.getException().getMessage());
+                                    }else{
+                                        callbackContext.error("Task failed for unknown reason");
+                                    }
+                                }
+                            });
+                } catch (Exception e) {
+                    handleExceptionWithContext(e, callbackContext);
+                }
+            }
+        });
+    }
 
     /*
      * Helper methods
